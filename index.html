@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fiches ECM</title>
+  <meta name="description" content="Fiches pédagogiques d'Éducation Civique et Morale — collège, Togo">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <meta name="theme-color" content="#1f4e5f">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="entete-app">
+    <h1>Fiches ECM</h1>
+    <button id="bouton-reglages" type="button">Réglages</button>
+  </header>
+
+  <main id="app"></main>
+
+  <div id="modal-reglages" class="modal-fond" hidden>
+    <div class="modal-boite">
+      <h2>Réglages</h2>
+      <form id="form-reglages">
+        <div class="champ-formulaire">
+          <label for="reglage-classe">Classe</label>
+          <input type="text" id="reglage-classe" placeholder="Ex. 6e A">
+        </div>
+        <div class="champ-formulaire">
+          <label for="reglage-duree">Durée</label>
+          <input type="text" id="reglage-duree" placeholder="Ex. 55 min / séance">
+        </div>
+        <div class="champ-formulaire">
+          <label for="reglage-etablissement">Établissement</label>
+          <input type="text" id="reglage-etablissement" placeholder="Nom de l'établissement">
+        </div>
+        <div class="champ-formulaire">
+          <label for="reglage-annee">Année</label>
+          <input type="text" id="reglage-annee" placeholder="Ex. 2026-2027">
+        </div>
+        <div class="champ-formulaire">
+          <label for="reglage-professeur">Professeur</label>
+          <input type="text" id="reglage-professeur" placeholder="Nom du professeur">
+        </div>
+        <div class="actions-modal">
+          <button type="button" id="bouton-fermer-reglages" class="bouton-annuler">Annuler</button>
+          <button type="submit" class="bouton-primaire">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
