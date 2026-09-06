@@ -121,13 +121,18 @@ function afficherNiveau(cleNiveau) {
   let html = `<button class="lien-retour" onclick="afficherAccueil()">&larr; Niveaux</button>
     <h1>${escapeHtml(cleNiveau)} — ${escapeHtml(niveau.nom)}</h1>`;
 
+  const integrationsParLecon = {};
+  (niveau.integrations || []).forEach(i => { integrationsParLecon[i.apresLeconId] = i; });
+
   let themeCourant = null;
+  let groupeOuvert = false;
   html += `<ul class="liste-lecons">`;
   for (const lecon of niveau.lecons) {
     if (lecon.theme !== themeCourant) {
-      if (themeCourant !== null) html += `</ul></li>`;
+      if (groupeOuvert) html += `</ul></li>`;
       html += `<li class="groupe-theme"><h3>${escapeHtml(lecon.theme)}</h3><ul>`;
       themeCourant = lecon.theme;
+      groupeOuvert = true;
     }
     const statutClasse = lecon.fiche ? "statut-ok" : "statut-attente";
     const statutLabel = lecon.fiche ? "rédigée" : "à rédiger";
@@ -141,8 +146,25 @@ function afficherNiveau(cleNiveau) {
           <span class="statut-lecon ${statutClasse}">${statutLabel}</span>
         </button>
       </li>`;
+
+    const integration = integrationsParLecon[lecon.id];
+    if (integration) {
+      if (groupeOuvert) { html += `</ul></li>`; groupeOuvert = false; themeCourant = null; }
+      const statutClasseI = integration.fiche ? "statut-ok" : "statut-attente";
+      const statutLabelI = integration.fiche ? "rédigée" : "à rédiger";
+      html += `
+        <li>
+          <button class="item-lecon item-integration" onclick="afficherIntegration('${cleNiveau}', '${integration.id}')">
+            <span class="numero-lecon badge-integration">Intégration</span>
+            <span class="titre-lecon">${escapeHtml(integration.themesCouverts.join(" + "))}</span>
+            <span class="duree-lecon">${integration.seances} séances (${integration.seances * DUREE_SEANCE_MIN} min)</span>
+            <span class="statut-lecon ${statutClasseI}">${statutLabelI}</span>
+          </button>
+        </li>`;
+    }
   }
-  html += `</ul></li></ul>`;
+  if (groupeOuvert) html += `</ul></li>`;
+  html += `</ul>`;
   app.innerHTML = html;
 }
 
@@ -175,6 +197,118 @@ function afficherLecon(cleNiveau, idLecon) {
   html += renderFiche(lecon, fiche);
   app.innerHTML = html;
   renderEnTete(app.querySelector("[data-entete-reglages]"));
+}
+
+function afficherIntegration(cleNiveau, idIntegration) {
+  const niveau = NIVEAUX[cleNiveau];
+  const integration = niveau && (niveau.integrations || []).find(i => i.id === idIntegration);
+  if (!integration) return afficherNiveau(cleNiveau);
+
+  const nomsLecons = integration.leconsCouvertes
+    .map(id => niveau.lecons.find(l => l.id === id))
+    .filter(Boolean)
+    .map(l => `Leçon ${l.numero} — ${l.titre}`);
+
+  const fiche = integration.fiche;
+
+  let html = `<button class="lien-retour" onclick="afficherNiveau('${cleNiveau}')">&larr; ${escapeHtml(cleNiveau)}</button>
+    <div data-entete-reglages></div>
+    <h1>${escapeHtml(cleNiveau)} — Intégration : ${escapeHtml(integration.themesCouverts.join(" + "))}</h1>
+    <p class="note-officielle">Compétence à intégrer : ${escapeHtml(integration.competence)}<br>Leçons couvertes : ${nomsLecons.map(escapeHtml).join(", ")}</p>`;
+
+  if (!fiche) {
+    html += `<p class="a-venir">Fiche d'intégration non encore rédigée.</p>
+      <button class="bouton-secondaire" onclick="afficherApercuIntegration('${cleNiveau}', '${idIntegration}')">Voir un modèle vide (démonstration)</button>`;
+    app.innerHTML = html;
+    renderEnTete(app.querySelector("[data-entete-reglages]"));
+    return;
+  }
+
+  html += renderFicheIntegration(integration, fiche);
+  app.innerHTML = html;
+  renderEnTete(app.querySelector("[data-entete-reglages]"));
+}
+
+function afficherApercuIntegration(cleNiveau, idIntegration) {
+  const niveau = NIVEAUX[cleNiveau];
+  const integration = niveau && (niveau.integrations || []).find(i => i.id === idIntegration);
+  let html = `<button class="lien-retour" onclick="afficherNiveau('${cleNiveau}')">&larr; ${escapeHtml(cleNiveau)}</button>
+    <div data-entete-reglages></div>
+    <p class="note-alerte">Modèle de démonstration — aucun contenu réel, sert uniquement à valider le gabarit d'intégration (y compris le corrigé type).</p>`;
+  html += renderFicheIntegration(integration || { competence: "[Exemple]", themesCouverts: ["Thème exemple"], leconsCouvertes: [] }, FICHE_INTEGRATION_DEMO);
+  app.innerHTML = html;
+  renderEnTete(app.querySelector("[data-entete-reglages]"));
+}
+
+function renderFicheIntegration(integration, fiche) {
+  const total = totalDeroulementMin(fiche.deroulement);
+  const ok = verifierMultipleDe55(total);
+
+  return `
+    <article class="fiche">
+      <section class="bloc">
+        <h2>Compétence à intégrer</h2>
+        <p>${escapeHtml(integration.competence)}</p>
+      </section>
+      <section class="bloc">
+        <h2>Documentation / Pré-requis</h2>
+        <ul>${fiche.documentation.map(d => `<li>${escapeHtml(d)}</li>`).join("")}</ul>
+        <ul>${fiche.preRequis.map(p => `<li>${escapeHtml(p)}</li>`).join("")}</ul>
+      </section>
+      <section class="bloc">
+        <h2>Ressources mobilisées (capacités des leçons du thème)</h2>
+        <ul class="liste-ressources">
+          ${fiche.ressourcesMobilisees.map(r => `
+            <li><strong>${escapeHtml(r.lecon)}</strong> : ${r.capacites.map(escapeHtml).join(", ")}</li>
+          `).join("")}
+        </ul>
+      </section>
+      <section class="bloc">
+        <h2>Situation complexe d'intégration</h2>
+        <p>${escapeHtml(fiche.situationComplexe)}</p>
+        <h3>Consignes</h3>
+        <ol class="consignes-numerotees">
+          ${fiche.consignes.map(c => `<li>${escapeHtml(c)}</li>`).join("")}
+        </ol>
+      </section>
+      <section class="bloc">
+        <h2>Déroulement</h2>
+        <p class="verif-minutage ${ok ? "minutage-ok" : "minutage-erreur"}">
+          Total : ${total} min — ${ok ? "OK, multiple de 55 min" : "⚠ n'est pas un multiple de 55 min, à corriger"}
+        </p>
+        <table class="tableau-deroulement">
+          <thead><tr><th>Phase</th><th>Durée</th><th>Activité professeur</th><th>Activité élèves</th></tr></thead>
+          <tbody>
+            ${fiche.deroulement.map(p => `
+              <tr>
+                <td>${escapeHtml(p.phase)}</td>
+                <td>${p.dureeMin} min</td>
+                <td>${escapeHtml(p.activiteProf)}</td>
+                <td>${escapeHtml(p.activiteEleves)}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </section>
+      <section class="bloc">
+        <h2>Corrigé type</h2>
+        <p><strong>Introduction</strong><br>${escapeHtml(fiche.corrigeType.introduction)}</p>
+        <p><strong>Développement</strong></p>
+        <ol class="corrige-developpement">
+          ${fiche.corrigeType.developpement.map(d => `<li><em>${escapeHtml(d.consigne)}</em><br>${escapeHtml(d.reponse)}</li>`).join("")}
+        </ol>
+        <p><strong>Conclusion</strong><br>${escapeHtml(fiche.corrigeType.conclusion)}</p>
+      </section>
+      <section class="bloc">
+        <h2>Grille de critères d'évaluation</h2>
+        <table class="tableau-criteres">
+          <thead><tr><th>Critère</th><th>Barème</th></tr></thead>
+          <tbody>
+            ${fiche.criteresEvaluation.map(c => `<tr><td>${escapeHtml(c.critere)}</td><td>${escapeHtml(c.bareme)}</td></tr>`).join("")}
+          </tbody>
+        </table>
+      </section>
+      <button class="bouton-secondaire no-print" onclick="window.print()">Imprimer / exporter en PDF</button>
+    </article>`;
 }
 
 function afficherApercu() {

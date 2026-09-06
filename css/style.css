@@ -131,6 +131,43 @@ h1 { color: var(--couleur-principale); }
 .statut-ok { background: #e3f5e9; color: var(--couleur-ok); }
 .statut-attente { background: #f1f1f1; color: #777; }
 
+.item-integration {
+  background: #f0f7f4;
+  border-color: var(--couleur-accent);
+}
+
+.badge-integration {
+  background: var(--couleur-accent);
+  color: white;
+  padding: 0.1rem 0.5rem;
+  border-radius: 0.3rem;
+  font-size: 0.8rem;
+  min-width: auto;
+}
+
+.liste-ressources { padding-left: 1.1rem; }
+
+.consignes-numerotees, .corrige-developpement {
+  padding-left: 1.4rem;
+}
+
+.consignes-numerotees li, .corrige-developpement li {
+  margin-bottom: 0.5rem;
+}
+
+.tableau-criteres {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableau-criteres th, .tableau-criteres td {
+  border: 1px solid var(--couleur-bordure);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.tableau-criteres th { background: #eef4f4; }
+
 .badge-alerte {
   background: #fdf0e0;
   color: var(--couleur-alerte);
