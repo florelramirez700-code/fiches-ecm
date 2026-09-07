@@ -397,7 +397,13 @@ function renderFiche(lecon, fiche) {
       </section>
       <section class="bloc">
         <h2>Résumé structuré</h2>
-        <p>${escapeHtml(fiche.resumeStructure)}</p>
+        ${Array.isArray(fiche.resumeStructure)
+          ? `<div class="resume-structure">${fiche.resumeStructure.map(s => `
+              <div class="resume-section">
+                <h3>${escapeHtml(s.titre)}</h3>
+                <p>${escapeHtml(s.contenu)}</p>
+              </div>`).join("")}</div>`
+          : `<p>${escapeHtml(fiche.resumeStructure)}</p>`}
       </section>
       <section class="bloc">
         <h2>Évaluation</h2>
