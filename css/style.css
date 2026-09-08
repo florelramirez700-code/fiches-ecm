@@ -336,3 +336,55 @@ h1 { color: var(--couleur-principale); }
   body { background: white; }
   .fiche .bloc { break-inside: avoid; border-color: #999; }
 }
+
+/* ---------- Édition directe des fiches ---------- */
+
+.barre-edition {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  background: #EEF5F2;
+  border: 1px solid #CFE3DC;
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+.astuce-edition { color: #3A5A50; flex: 1; }
+
+.badge-enregistre {
+  background: var(--couleur-principale, #1F5C52);
+  color: #fff;
+  padding: 0.2rem 0.6rem;
+  border-radius: 1rem;
+  font-size: 0.78rem;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.badge-enregistre.visible { opacity: 1; }
+
+.bouton-lien {
+  background: none;
+  border: none;
+  color: #8a3b2a;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.82rem;
+  padding: 0;
+}
+
+.editable-champ {
+  outline: none;
+  border-radius: 0.25rem;
+  padding: 0.05rem 0.2rem;
+  cursor: text;
+}
+.editable-champ:hover {
+  background: #FAF6EC;
+}
+.editable-champ:focus {
+  background: #FDF3D9;
+  box-shadow: 0 0 0 2px #C68A2E inset;
+}
