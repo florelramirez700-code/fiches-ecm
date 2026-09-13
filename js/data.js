@@ -1211,11 +1211,11 @@ const NIVEAUX = {
             },
             {
               "titre": "2. Les notions liées à l'extrémisme violent",
-              "contenu": "Les concepts liés à l'extrémisme violent sont notamment la discrimination (traiter certaines personnes de façon injuste sur la base du genre, de la religion, de l'ethnie ou de la race), la stigmatisation (condamner et marquer négativement une personne), l'intolérance (refuser d'admettre l'existence d'idées ou d'opinions différentes des siennes), la violence (l'usage de la force pour atteindre un but), la radicalisation (le processus par lequel une personne adhère de manière extrême à des idéologies violentes, en opposition à la société et à ses valeurs), et le fanatisme (une attitude extrême et irrationnelle d'admiration envers une personne, une idée ou une cause)."
+              "contenu": "Plusieurs concepts sont liés à l'extrémisme violent : la discrimination (traiter certaines personnes injustement selon le genre, la religion, l'ethnie ou la race), la stigmatisation (condamner et marquer négativement une personne), l'intolérance (refuser d'admettre des idées ou opinions différentes des siennes), la violence (l'usage de la force pour atteindre un but), la radicalisation (le processus par lequel une personne adhère de manière extrême à des idéologies violentes) et le fanatisme (une attitude extrême et irrationnelle d'admiration envers une personne, une idée ou une cause)."
             },
             {
               "titre": "3. Les signes d'alerte de l'extrémisme violent",
-              "contenu": "Ce sont l'ensemble des changements observables chez une personne qui peuvent déboucher sur l'extrémisme violent : la rupture avec la famille, le rejet des pairs, le rejet de l'autorité, l'isolement et le repli sur soi, l'intolérance à l'égard des autres, et l'adoption de croyances extrêmes."
+              "contenu": "Ce sont les changements observables chez un individu qui peuvent déboucher sur l'extrémisme violent : la rupture avec la famille, le rejet des pairs, le rejet de l'autorité, l'isolement et le repli sur soi, l'intolérance à l'égard des autres, et l'adoption de croyances extrêmes."
             }
           ],
           "evaluation": "Définition de l'extrémisme violent.",
