@@ -91,6 +91,99 @@ function verifierMultipleDe55(totalMin) {
   return totalMin > 0 && totalMin % DUREE_SEANCE_MIN === 0;
 }
 
+/* ---------- Édition directe des fiches (contenteditable + sauvegarde locale) ---------- */
+
+const EDITS_KEY = "fichesEcmEdits";
+
+function getAllEdits() {
+  try {
+    const raw = localStorage.getItem(EDITS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveEdit(ficheId, path, value) {
+  const all = getAllEdits();
+  if (!all[ficheId]) all[ficheId] = {};
+  all[ficheId][path] = value;
+  try {
+    localStorage.setItem(EDITS_KEY, JSON.stringify(all));
+  } catch (e) {
+    console.warn("Impossible d'enregistrer la modification :", e);
+  }
+}
+
+function getDeepValue(obj, path) {
+  return path.split(".").reduce((o, k) => (o == null ? o : o[k]), obj);
+}
+
+function setDeepValue(obj, path, value) {
+  const keys = path.split(".");
+  let cur = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    cur = cur[keys[i]];
+    if (cur == null) return;
+  }
+  cur[keys[keys.length - 1]] = value;
+}
+
+/* Clone la fiche et lui applique les éventuelles modifications enregistrées localement,
+   pour que les corrections faites par l'enseignante restent visibles après un rechargement. */
+function ficheAvecEdits(ficheId, fiche) {
+  const clone = JSON.parse(JSON.stringify(fiche));
+  const edits = getAllEdits()[ficheId];
+  if (edits) {
+    Object.keys(edits).forEach(path => setDeepValue(clone, path, edits[path]));
+  }
+  return clone;
+}
+
+function editable(path, value) {
+  return `<span class="editable-champ" contenteditable="true" data-path="${escapeHtml(path)}">${escapeHtml(value)}</span>`;
+}
+
+/* Écoute globale : dès qu'un champ modifiable perd le focus, on enregistre la nouvelle valeur
+   (et on la reflète dans les données en mémoire, pour rester cohérent le temps de la session). */
+document.addEventListener("blur", function (e) {
+  const el = e.target;
+  if (!el.classList || !el.classList.contains("editable-champ")) return;
+  const article = el.closest("[data-fiche-id]");
+  if (!article) return;
+  const ficheId = article.getAttribute("data-fiche-id");
+  const path = el.getAttribute("data-path");
+  const value = el.innerText.trim();
+  saveEdit(ficheId, path, value);
+  const fiche = trouverFicheParId(ficheId);
+  if (fiche) setDeepValue(fiche, path, value);
+  const badge = article.querySelector(".badge-enregistre");
+  if (badge) {
+    badge.classList.add("visible");
+    clearTimeout(badge._t);
+    badge._t = setTimeout(() => badge.classList.remove("visible"), 1500);
+  }
+}, true);
+
+function trouverFicheParId(ficheId) {
+  for (const cle of Object.keys(NIVEAUX)) {
+    const niveau = NIVEAUX[cle];
+    const lecon = niveau.lecons.find(l => l.id === ficheId);
+    if (lecon && lecon.fiche) return lecon.fiche;
+    const integ = (niveau.integrations || []).find(i => i.id === ficheId);
+    if (integ && integ.fiche) return integ.fiche;
+  }
+  return null;
+}
+
+function reinitialiserFiche(ficheId) {
+  if (!confirm("Effacer toutes vos modifications sur cette fiche et revenir au contenu d'origine ?")) return;
+  const all = getAllEdits();
+  delete all[ficheId];
+  localStorage.setItem(EDITS_KEY, JSON.stringify(all));
+  location.reload();
+}
+
 /* ---------- Navigation ---------- */
 
 const app = document.getElementById("app");
@@ -194,7 +287,8 @@ function afficherLecon(cleNiveau, idLecon) {
     return;
   }
 
-  html += renderFiche(lecon, fiche);
+  const ficheEditee = ficheAvecEdits(lecon.id, fiche);
+  html += renderFiche(lecon, ficheEditee);
   app.innerHTML = html;
   renderEnTete(app.querySelector("[data-entete-reglages]"));
 }
@@ -224,7 +318,8 @@ function afficherIntegration(cleNiveau, idIntegration) {
     return;
   }
 
-  html += renderFicheIntegration(integration, fiche);
+  const ficheEditee = ficheAvecEdits(integration.id, fiche);
+  html += renderFicheIntegration(integration, ficheEditee);
   app.innerHTML = html;
   renderEnTete(app.querySelector("[data-entete-reglages]"));
 }
@@ -243,17 +338,23 @@ function afficherApercuIntegration(cleNiveau, idIntegration) {
 function renderFicheIntegration(integration, fiche) {
   const total = totalDeroulementMin(fiche.deroulement);
   const ok = verifierMultipleDe55(total);
+  const fid = integration.id;
 
   return `
-    <article class="fiche">
+    <article class="fiche" data-fiche-id="${escapeHtml(fid)}">
+      <div class="barre-edition no-print">
+        <span class="astuce-edition">✏️ Cliquez sur n'importe quel texte pour le corriger</span>
+        <span class="badge-enregistre">Enregistré ✓</span>
+        <button class="bouton-lien" onclick="reinitialiserFiche('${escapeHtml(fid)}')">Réinitialiser cette fiche</button>
+      </div>
       <section class="bloc">
         <h2>Compétence à intégrer</h2>
         <p>${escapeHtml(integration.competence)}</p>
       </section>
       <section class="bloc">
         <h2>Documentation / Pré-requis</h2>
-        <ul>${fiche.documentation.map(d => `<li>${escapeHtml(d)}</li>`).join("")}</ul>
-        <ul>${fiche.preRequis.map(p => `<li>${escapeHtml(p)}</li>`).join("")}</ul>
+        <ul>${fiche.documentation.map((d, i) => `<li>${editable(`documentation.${i}`, d)}</li>`).join("")}</ul>
+        <ul>${fiche.preRequis.map((p, i) => `<li>${editable(`preRequis.${i}`, p)}</li>`).join("")}</ul>
       </section>
       <section class="bloc">
         <h2>Ressources mobilisées (capacités des leçons du thème)</h2>
@@ -265,10 +366,10 @@ function renderFicheIntegration(integration, fiche) {
       </section>
       <section class="bloc">
         <h2>Situation complexe d'intégration</h2>
-        <p>${escapeHtml(fiche.situationComplexe)}</p>
+        <p>${editable("situationComplexe", fiche.situationComplexe)}</p>
         <h3>Consignes</h3>
         <ol class="consignes-numerotees">
-          ${fiche.consignes.map(c => `<li>${escapeHtml(c)}</li>`).join("")}
+          ${fiche.consignes.map((c, i) => `<li>${editable(`consignes.${i}`, c)}</li>`).join("")}
         </ol>
       </section>
       <section class="bloc">
@@ -279,24 +380,24 @@ function renderFicheIntegration(integration, fiche) {
         <table class="tableau-deroulement">
           <thead><tr><th>Phase</th><th>Durée</th><th>Activité professeur</th><th>Activité élèves</th></tr></thead>
           <tbody>
-            ${fiche.deroulement.map(p => `
+            ${fiche.deroulement.map((p, i) => `
               <tr>
-                <td>${escapeHtml(p.phase)}</td>
+                <td>${editable(`deroulement.${i}.phase`, p.phase)}</td>
                 <td>${p.dureeMin} min</td>
-                <td>${escapeHtml(p.activiteProf)}</td>
-                <td>${escapeHtml(p.activiteEleves)}</td>
+                <td>${editable(`deroulement.${i}.activiteProf`, p.activiteProf)}</td>
+                <td>${editable(`deroulement.${i}.activiteEleves`, p.activiteEleves)}</td>
               </tr>`).join("")}
           </tbody>
         </table>
       </section>
       <section class="bloc">
         <h2>Corrigé type</h2>
-        <p><strong>Introduction</strong><br>${escapeHtml(fiche.corrigeType.introduction)}</p>
+        <p><strong>Introduction</strong><br>${editable("corrigeType.introduction", fiche.corrigeType.introduction)}</p>
         <p><strong>Développement</strong></p>
         <ol class="corrige-developpement">
-          ${fiche.corrigeType.developpement.map(d => `<li><em>${escapeHtml(d.consigne)}</em><br>${escapeHtml(d.reponse)}</li>`).join("")}
+          ${fiche.corrigeType.developpement.map((d, i) => `<li><em>${escapeHtml(d.consigne)}</em><br>${editable(`corrigeType.developpement.${i}.reponse`, d.reponse)}</li>`).join("")}
         </ol>
-        <p><strong>Conclusion</strong><br>${escapeHtml(fiche.corrigeType.conclusion)}</p>
+        <p><strong>Conclusion</strong><br>${editable("corrigeType.conclusion", fiche.corrigeType.conclusion)}</p>
       </section>
       <section class="bloc">
         <h2>Grille de critères d'évaluation</h2>
@@ -325,20 +426,26 @@ function afficherApercu() {
 function renderFiche(lecon, fiche) {
   const total = totalDeroulementMin(fiche.deroulement);
   const ok = verifierMultipleDe55(total);
+  const fid = lecon.id;
 
   return `
-    <article class="fiche">
+    <article class="fiche" data-fiche-id="${escapeHtml(fid)}">
+      <div class="barre-edition no-print">
+        <span class="astuce-edition">✏️ Cliquez sur n'importe quel texte pour le corriger</span>
+        <span class="badge-enregistre">Enregistré ✓</span>
+        <button class="bouton-lien" onclick="reinitialiserFiche('${escapeHtml(fid)}')">Réinitialiser cette fiche</button>
+      </div>
       <section class="bloc">
         <h2>Compétence</h2>
-        <p>${escapeHtml(fiche.competence)}</p>
+        <p>${editable("competence", fiche.competence)}</p>
       </section>
       <section class="bloc">
         <h2>Thème</h2>
-        <p>${escapeHtml(fiche.theme)}</p>
+        <p>${editable("theme", fiche.theme)}</p>
       </section>
       <section class="bloc">
         <h2>Documentation</h2>
-        <ul>${fiche.documentation.map(d => `<li>${escapeHtml(d)}</li>`).join("")}</ul>
+        <ul>${fiche.documentation.map((d, i) => `<li>${editable(`documentation.${i}`, d)}</li>`).join("")}</ul>
       </section>
       <section class="bloc">
         <h2>Supports didactiques</h2>
@@ -348,32 +455,32 @@ function renderFiche(lecon, fiche) {
       </section>
       <section class="bloc">
         <h2>Pré-requis</h2>
-        <ul>${fiche.preRequis.map(p => `<li>${escapeHtml(p)}</li>`).join("")}</ul>
+        <ul>${fiche.preRequis.map((p, i) => `<li>${editable(`preRequis.${i}`, p)}</li>`).join("")}</ul>
       </section>
       <section class="bloc">
         <h2>Capacités / Contenus</h2>
         <table class="tableau-capacites">
           <thead><tr><th>Capacités</th><th>Contenus</th></tr></thead>
           <tbody>
-            ${fiche.capacitesContenus.map(cc => `
+            ${fiche.capacitesContenus.map((cc, i) => `
               <tr>
-                <td>${escapeHtml(cc.capacite)}</td>
-                <td><ul>${cc.contenus.map(c => `<li>${escapeHtml(c)}</li>`).join("")}</ul></td>
+                <td>${editable(`capacitesContenus.${i}.capacite`, cc.capacite)}</td>
+                <td><ul>${cc.contenus.map((c, j) => `<li>${editable(`capacitesContenus.${i}.contenus.${j}`, c)}</li>`).join("")}</ul></td>
               </tr>`).join("")}
           </tbody>
         </table>
       </section>
       <section class="bloc">
         <h2>Situation d'apprentissage</h2>
-        <p>${escapeHtml(fiche.situationApprentissage)}</p>
+        <p>${editable("situationApprentissage", fiche.situationApprentissage)}</p>
       </section>
       <section class="bloc">
         <h2>Consignes</h2>
-        <ul>${fiche.consignes.map(c => `<li>${escapeHtml(c)}</li>`).join("")}</ul>
+        <ul>${fiche.consignes.map((c, i) => `<li>${editable(`consignes.${i}`, c)}</li>`).join("")}</ul>
       </section>
       <section class="bloc">
         <h2>Stratégies pédagogiques</h2>
-        <ul>${fiche.strategiesPedagogiques.map(s => `<li>${escapeHtml(s)}</li>`).join("")}</ul>
+        <ul>${fiche.strategiesPedagogiques.map((s, i) => `<li>${editable(`strategiesPedagogiques.${i}`, s)}</li>`).join("")}</ul>
       </section>
       <section class="bloc">
         <h2>Déroulement</h2>
@@ -383,12 +490,12 @@ function renderFiche(lecon, fiche) {
         <table class="tableau-deroulement">
           <thead><tr><th>Phase</th><th>Durée</th><th>Contenu</th></tr></thead>
           <tbody>
-            ${fiche.deroulement.map(p => `
+            ${fiche.deroulement.map((p, i) => `
               <tr>
-                <td>${escapeHtml(p.phase)}</td>
+                <td>${editable(`deroulement.${i}.phase`, p.phase)}</td>
                 <td>${p.dureeMin} min</td>
                 <td>
-                  ${escapeHtml(p.contenu)}
+                  ${editable(`deroulement.${i}.contenu`, p.contenu)}
                   ${p.image ? `<img class="image-deroulement" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.phase)}">` : ""}
                 </td>
               </tr>`).join("")}
@@ -398,20 +505,20 @@ function renderFiche(lecon, fiche) {
       <section class="bloc">
         <h2>Résumé structuré</h2>
         ${Array.isArray(fiche.resumeStructure)
-          ? `<div class="resume-structure">${fiche.resumeStructure.map(s => `
+          ? `<div class="resume-structure">${fiche.resumeStructure.map((s, i) => `
               <div class="resume-section">
-                <h3>${escapeHtml(s.titre)}</h3>
-                <p>${escapeHtml(s.contenu)}</p>
+                <h3>${editable(`resumeStructure.${i}.titre`, s.titre)}</h3>
+                <p>${editable(`resumeStructure.${i}.contenu`, s.contenu)}</p>
               </div>`).join("")}</div>`
-          : `<p>${escapeHtml(fiche.resumeStructure)}</p>`}
+          : `<p>${editable("resumeStructure", fiche.resumeStructure)}</p>`}
       </section>
       <section class="bloc">
         <h2>Évaluation</h2>
-        <p>${escapeHtml(fiche.evaluation)}</p>
+        <p>${editable("evaluation", fiche.evaluation)}</p>
       </section>
       <section class="bloc">
         <h2>Devoir de maison</h2>
-        <p>${escapeHtml(fiche.devoirMaison)}</p>
+        <p>${editable("devoirMaison", fiche.devoirMaison)}</p>
       </section>
       <button class="bouton-secondaire no-print" onclick="window.print()">Imprimer / exporter en PDF</button>
     </article>`;
