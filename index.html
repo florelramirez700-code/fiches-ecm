@@ -198,6 +198,20 @@ function openFiche(niv, numero, isInt){
         <td style="padding:4px 8px;border:1px solid var(--line)">${esc(etab)}</td></tr>
   </table></div>`;
 
+  if(l.competence){
+    h+=`<div class="card"><h3>Compétence visée</h3>
+      <p style="font-size:13.5px;line-height:1.6;">${esc(l.competence)}</p></div>`;
+  }
+
+  if(l.capacitesContenus && l.capacitesContenus.length){
+    h+=`<div class="card"><h3>Capacités et contenus</h3>
+      <table class="deroul-table"><thead><tr><th style="width:45%">Capacités</th><th>Contenus</th></tr></thead><tbody>`;
+    l.capacitesContenus.forEach(c=>{
+      h+=`<tr><td>${esc(c[0])}</td><td>${esc(c[1]).replace(/\n/g,'<br>')}</td></tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+
   h+=`<div class="card"><h3>Situation d'apprentissage</h3>
     <div class="sp-box" contenteditable="true" data-key="sa_${niv}_${numero}">${esc(l.situationApprentissage)}</div></div>`;
 
@@ -234,6 +248,14 @@ function openFiche(niv, numero, isInt){
   if(l.devoirMaison){
     h+=`<div class="card"><h3>Exercice de maison</h3>
       <div contenteditable="true" data-key="dm_${niv}_${numero}" style="font-size:14px;line-height:1.6;white-space:pre-line;">${esc(l.devoirMaison)}</div></div>`;
+  }
+
+  if(l.documentation && l.documentation.length){
+    h+=`<div class="card"><h3>Références documentaires</h3><ul style="font-size:12.5px;line-height:1.7;padding-left:18px;color:var(--ink-soft);">`;
+    l.documentation.forEach(ref=>{
+      h+=`<li>${esc(ref)}</li>`;
+    });
+    h+=`</ul></div>`;
   }
 
   const el = document.getElementById('viewFiche');
