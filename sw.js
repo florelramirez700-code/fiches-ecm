@@ -1,4 +1,5 @@
-const CACHE_NAME = 'ecm-v1';
+// Changer ce numéro à chaque mise à jour importante force le rechargement de tous les fichiers.
+const CACHE_NAME = 'ecm-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -37,17 +38,17 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
+// Réseau d'abord : avec une connexion, on reçoit toujours la dernière version des
+// fiches (et on met la copie hors ligne à jour) ; sans connexion, on sert la copie.
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (response && response.status === 200 && event.request.method === 'GET') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      }).catch(() => cached);
-    })
+    fetch(event.request).then(response => {
+      if (response && response.status === 200 && response.type === 'basic') {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+      }
+      return response;
+    }).catch(() => caches.match(event.request, { ignoreSearch: true }))
   );
 });
