@@ -175,6 +175,7 @@ function fmt(s){
   };
   String(s||'').split('\n').forEach(line=>{
     if(line.trim().startsWith('|')) rows.push(line.trim());
+    else if(/^(INTRODUCTION|DÉVELOPPEMENT|CONCLUSION)$/.test(line.trim())){ flush(); out.push('<b style="color:var(--teal-deep)">'+esc(line.trim())+'</b>'); }
     else { flush(); out.push(esc(line)); }
   });
   flush();
