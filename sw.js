@@ -1,5 +1,5 @@
 // Changer ce numéro à chaque mise à jour importante force le rechargement de tous les fichiers.
-const CACHE_NAME = 'ecm-v8';
+const CACHE_NAME = 'ecm-v9';
 const ASSETS = [
   './',
   './index.html',
@@ -43,7 +43,9 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request).then(response => {
+    // cache: 'no-cache' : on revérifie toujours auprès de GitHub (qui demande sinon de garder
+    // les fichiers 10 minutes), pour que les mises à jour arrivent tout de suite.
+    fetch(event.request, { cache: 'no-cache' }).then(response => {
       if (response && response.status === 200 && response.type === 'basic') {
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));

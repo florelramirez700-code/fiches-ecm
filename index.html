@@ -122,7 +122,7 @@
 <body>
 <header>
   <div id="hdrNiveaux" class="hdr-row">
-    <div class="hdr-left"><div><h1>📘 ECM — Collège</h1><p>Éducation Civique et Morale — 4 niveaux</p></div></div>
+    <div class="hdr-left"><div><h1>📘 ECM — Collège</h1><p>Éducation Civique et Morale — 4 niveaux · <span id="versionApp"></span></p></div></div>
     <button class="reglages-btn" onclick="openReglages()">⚙ Réglages</button>
   </div>
   <div id="hdrNiveau" class="hdr-row" style="display:none">
@@ -560,13 +560,27 @@ function saveReglages(){
   closeReglages();
 }
 
+// Numéro de version affiché en haut de l'accueil (le changer à chaque publication, comme CACHE_NAME dans sw.js)
+const APP_VERSION = 'version 9 du 26/09/2026';
+document.getElementById('versionApp').textContent = APP_VERSION;
+
 renderNiveaux();
 // À l'impression, déplier tous les corrigés
 window.addEventListener('beforeprint', ()=>document.querySelectorAll('details').forEach(d=>d.open=true));
 
 if ('serviceWorker' in navigator) {
+  // Quand une nouvelle version prend la main, on recharge une fois pour l'afficher tout de suite
+  const avaitUnControleur = !!navigator.serviceWorker.controller;
+  let recharge = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (avaitUnControleur && !recharge) { recharge = true; location.reload(); }
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+      reg.update();
+      // Vérifier aussi les mises à jour quand on revient sur l'application
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update(); });
+    }).catch(err => console.log('SW registration failed:', err));
   });
 }
 </script>
