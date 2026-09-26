@@ -496,11 +496,19 @@ function openIntegration(niv, numero){
     h+=`</tbody></table></div></div>`;
   }
 
+  // Première intégration de 6e : apprentissage de la démarche de traitement d'une situation d'évaluation
+  if(i.methode){
+    h+=`<div class="card" style="border:2px solid var(--gold)"><h3>📝 Méthode : traiter une situation d'évaluation</h3>
+      <p class="img-legende no-print" style="margin-bottom:6px">À enseigner lors de cette première intégration ; les élèves la recopient dans leur cahier et l'appliquent ensuite à chaque situation.</p>
+      ${ed('imeth_'+k, fmt(i.methode), 'font-size:14px;line-height:1.7;white-space:pre-line;')}</div>`;
+  }
+
   i.situations.forEach((s,n)=>{
     h+=`<div class="card"><h3>${esc(s.titre)}</h3>
       <div class="sp-box">${ed(`isit_${k}_${n}`, esc(s.texte))}</div>
       <div style="margin-top:10px;font-size:14px;line-height:1.6"><b>Consigne${s.consignes.length>1?'s':''} :</b>
         ${ed(`icons_${k}_${n}`, s.consignes.map((c,j)=>(s.consignes.length>1?(j+1)+'. ':'')+esc(c)).join('\n'), 'white-space:pre-line')}</div>
+      ${n===0 && i.analyse ? `<div style="margin-top:10px">${ed('iana_'+k, fmt(i.analyse), 'font-size:13.5px;line-height:1.6;white-space:pre-line;font-weight:normal')}</div>` : ''}
       <details class="corrige" ${n===0?'open':''}><summary>Corrigé type</summary>
         ${ed(`icor_${k}_${n}`, fmt(s.corrige), 'font-size:14px;line-height:1.7;white-space:pre-line;margin-top:6px')}</details>
     </div>`;
@@ -511,7 +519,7 @@ function openIntegration(niv, numero){
 
   h+=`<div class="card"><h3>Déroulement de la séance d'intégration — 55 min</h3><div class="table-wrap">
     <table class="deroul-table"><thead><tr><th>Moments didactiques</th><th>Durée</th><th>Activités du professeur</th><th>Activités des élèves</th><th>Matériels didactiques</th></tr></thead><tbody>`;
-  DEROUL_INT.forEach((p,pi)=>{
+  (i.deroulement||DEROUL_INT).forEach((p,pi)=>{
     h+=`<tr><td style="font-weight:700;color:var(--teal-deep)">${esc(p[0])}</td>
       <td style="color:var(--gold);font-weight:700;white-space:nowrap">${p[1]} min</td>
       <td>${ed(`idr_${k}_${pi}_p`, esc(p[2]), 'white-space:pre-line')}</td>
@@ -523,7 +531,7 @@ function openIntegration(niv, numero){
   const el = document.getElementById('viewFiche');
   el.innerHTML = h;
   const prefixes=['eff_f_i'+k,'eff_g_i'+k,'eff_t_i'+k,'date_i'+k,'seance_i'+k,'g1_'+k,'g4_'+k,'g5_'+k,'g6_'+k,
-    'isit_'+k+'_','icons_'+k+'_','icor_'+k+'_','idr_'+k+'_'];
+    'isit_'+k+'_','icons_'+k+'_','icor_'+k+'_','idr_'+k+'_','imeth_'+k,'iana_'+k];
   const rerender=()=>openIntegration(niv, numero);
   document.getElementById('zoneAlerte').innerHTML = alerteModifs(bindEditables(el));
   const bt=document.getElementById('btnToutOrig');
