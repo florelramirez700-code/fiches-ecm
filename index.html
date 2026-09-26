@@ -502,6 +502,12 @@ function openIntegration(niv, numero){
       <p class="img-legende no-print" style="margin-bottom:6px">À enseigner lors de cette première intégration ; les élèves la recopient dans leur cahier et l'appliquent ensuite à chaque situation.</p>
       ${ed('imeth_'+k, fmt(i.methode), 'font-size:14px;line-height:1.7;white-space:pre-line;')}</div>`;
   }
+  // Première intégration de 5e, 4e, 3e : rappel de la démarche
+  if(i.rappel){
+    h+=`<div class="card" style="border:2px solid var(--gold)"><h3>🔁 Rappel : traiter une situation d'évaluation</h3>
+      <p class="img-legende no-print" style="margin-bottom:6px">À rappeler en début de séance (remobilisation) ; les élèves la relisent dans leur cahier.</p>
+      ${ed('irap_'+k, fmt(i.rappel), 'font-size:14px;line-height:1.7;white-space:pre-line;')}</div>`;
+  }
 
   i.situations.forEach((s,n)=>{
     h+=`<div class="card"><h3>${esc(s.titre)}</h3>
@@ -519,7 +525,14 @@ function openIntegration(niv, numero){
 
   h+=`<div class="card"><h3>Déroulement de la séance d'intégration — 55 min</h3><div class="table-wrap">
     <table class="deroul-table"><thead><tr><th>Moments didactiques</th><th>Durée</th><th>Activités du professeur</th><th>Activités des élèves</th><th>Matériels didactiques</th></tr></thead><tbody>`;
-  (i.deroulement||DEROUL_INT).forEach((p,pi)=>{
+  let deroul = i.deroulement || DEROUL_INT;
+  if(i.rappel){
+    // Remobilisation allongée pour rappeler la démarche (5 min), institutionnalisation raccourcie (13 min) : total 55 min
+    deroul = deroul.map(p=>p.slice());
+    deroul[0][1]='5'; deroul[0][2]+=' ; fait rappeler les 6 étapes de traitement d\'une situation d\'évaluation (encadré « Rappel »)'; deroul[0][3]+=' ; récitent les étapes de la démarche';
+    deroul[5][1]='13';
+  }
+  deroul.forEach((p,pi)=>{
     h+=`<tr><td style="font-weight:700;color:var(--teal-deep)">${esc(p[0])}</td>
       <td style="color:var(--gold);font-weight:700;white-space:nowrap">${p[1]} min</td>
       <td>${ed(`idr_${k}_${pi}_p`, esc(p[2]), 'white-space:pre-line')}</td>
@@ -531,7 +544,7 @@ function openIntegration(niv, numero){
   const el = document.getElementById('viewFiche');
   el.innerHTML = h;
   const prefixes=['eff_f_i'+k,'eff_g_i'+k,'eff_t_i'+k,'date_i'+k,'seance_i'+k,'g1_'+k,'g4_'+k,'g5_'+k,'g6_'+k,
-    'isit_'+k+'_','icons_'+k+'_','icor_'+k+'_','idr_'+k+'_','imeth_'+k,'iana_'+k];
+    'isit_'+k+'_','icons_'+k+'_','icor_'+k+'_','idr_'+k+'_','imeth_'+k,'iana_'+k,'irap_'+k];
   const rerender=()=>openIntegration(niv, numero);
   document.getElementById('zoneAlerte').innerHTML = alerteModifs(bindEditables(el));
   const bt=document.getElementById('btnToutOrig');
@@ -561,7 +574,7 @@ function saveReglages(){
 }
 
 // Numéro de version affiché en haut de l'accueil (le changer à chaque publication, comme CACHE_NAME dans sw.js)
-const APP_VERSION = 'version 9 du 26/09/2026';
+const APP_VERSION = 'version 10 du 26/09/2026';
 document.getElementById('versionApp').textContent = APP_VERSION;
 
 renderNiveaux();
