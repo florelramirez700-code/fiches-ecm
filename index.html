@@ -325,12 +325,11 @@ function openFiche(niv, numero){
     <tr><td class="k">Discipline</td><td>ECM</td>
         <td class="k">Classe</td><td>${NIVEAU_LABELS[niv]}</td></tr>
     <tr><td class="k">Établissement</td><td colspan="3">${esc(reglage('etab'))}</td></tr>
-    <tr><td class="k">Professeur</td><td colspan="3">${esc(reglage('prof'))}</td></tr>
-    <tr><td class="k">Effectif</td><td colspan="3"><span class="nw">F = ${ed('eff_f_'+k,'')}</span> <span class="nw">G = ${ed('eff_g_'+k,'')}</span> <span class="nw">Total = ${ed('eff_t_'+k,'')}</span></td></tr>
-    <tr><td class="k">Date</td><td colspan="3">${ed('date_'+k,'')}</td></tr>
+    <tr><td class="k">Nom du professeur</td><td colspan="3">${esc(reglage('prof'))}</td></tr>
+    <tr><td class="k">Effectif</td><td colspan="3"><span class="nw">F = ${ed('eff_f_'+k,'')}</span> <span class="nw">G = ${ed('eff_g_'+k,'')}</span></td></tr>
     <tr><td class="k">Thème</td><td colspan="3">${esc(l.theme)}</td></tr>
     <tr><td class="k">Leçon ${l.numero}</td><td colspan="3"><b>${esc(l.titre)}</b></td></tr>
-    <tr><td class="k">Séances</td><td><span class="nw">Séance n° ${ed('seance_'+k,'')} sur ${seances}</span></td><td class="k">Durée d'une séance</td><td>55 min</td></tr>
+    <tr><td class="k">Nombre de séances</td><td>${seances}</td><td class="k">Durée d'une séance</td><td>55 min</td></tr>
   </table></div>`;
 
   if(l.documentation && l.documentation.length){
@@ -383,7 +382,7 @@ function openFiche(niv, numero){
   if(l.deroulement.length){
     const tot=l.deroulement.reduce((s,p)=>s+(parseInt(p.duree)||0),0);
     h+=`<div class="card"><h3>Déroulement d'une séance — ${tot} min</h3>
-      ${seances>2?`<p class="img-legende no-print" style="margin-bottom:6px">Cette leçon compte ${seances} séances : adaptez les activités et les capacités visées à la séance du jour (indiquez son numéro dans l'en-tête).</p>`:''}
+      ${seances>2?`<p class="img-legende no-print" style="margin-bottom:6px">Cette leçon compte ${seances} séances : adaptez les activités et les capacités visées à la séance du jour.</p>`:''}
       <div class="table-wrap">
       <table class="deroul-table"><thead><tr><th>Moments didactiques</th><th>Durée</th><th>Activités du professeur</th><th>Activités des élèves</th><th>Matériels didactiques</th></tr></thead><tbody>`;
     l.deroulement.forEach((p,pi)=>{
@@ -411,7 +410,7 @@ function openFiche(niv, numero){
 
   const el = document.getElementById('viewFiche');
   el.innerHTML = h;
-  const prefixes=['fn_','seance_','eff_f_','eff_g_','eff_t_','date_','sup_','pre_','met_','tec_','comp_','sa_','te_','ev_','dm_'].map(p=>p+k).concat(['d_'+k+'_']);
+  const prefixes=['fn_','eff_f_','eff_g_','sup_','pre_','met_','tec_','comp_','sa_','te_','ev_','dm_'].map(p=>p+k).concat(['d_'+k+'_']);
   // Effectif, date et n° de fiche sont des saisies normales : pas d'alerte pour eux
   const n = bindEditables(el);
   const rerender=()=>openFiche(niv, numero);
@@ -475,12 +474,11 @@ function openIntegration(niv, numero){
     <tr><td class="k">Fiche</td><td>Intégration ${i.numero}</td><td class="k">AN/SC</td><td>${esc(reglage('annee'))}</td></tr>
     <tr><td class="k">Discipline</td><td>ECM</td><td class="k">Classe</td><td>${NIVEAU_LABELS[niv]}</td></tr>
     <tr><td class="k">Établissement</td><td colspan="3">${esc(reglage('etab'))}</td></tr>
-    <tr><td class="k">Professeur</td><td colspan="3">${esc(reglage('prof'))}</td></tr>
-    <tr><td class="k">Effectif</td><td colspan="3"><span class="nw">F = ${ed('eff_f_i'+k,'')}</span> <span class="nw">G = ${ed('eff_g_i'+k,'')}</span> <span class="nw">Total = ${ed('eff_t_i'+k,'')}</span></td></tr>
-    <tr><td class="k">Date</td><td colspan="3">${ed('date_i'+k,'')}</td></tr>
+    <tr><td class="k">Nom du professeur</td><td colspan="3">${esc(reglage('prof'))}</td></tr>
+    <tr><td class="k">Effectif</td><td colspan="3"><span class="nw">F = ${ed('eff_f_i'+k,'')}</span> <span class="nw">G = ${ed('eff_g_i'+k,'')}</span></td></tr>
     <tr><td class="k">Thème</td><td colspan="3">${esc(i.theme)}</td></tr>
     <tr><td class="k">Leçons</td><td colspan="3">${esc(i.lecons)}</td></tr>
-    <tr><td class="k">Séances</td><td><span class="nw">Séance n° ${ed('seance_i'+k,'')} sur 3</span></td><td class="k">Durée d'une séance</td><td>55 min</td></tr>
+    <tr><td class="k">Nombre de séances</td><td>3</td><td class="k">Durée d'une séance</td><td>55 min</td></tr>
   </table>
   <p class="img-legende" style="margin-top:6px">3 séances : situation traitée avec les élèves · situation traitée individuellement · correction et remédiation.</p></div>`;
 
@@ -543,7 +541,7 @@ function openIntegration(niv, numero){
 
   const el = document.getElementById('viewFiche');
   el.innerHTML = h;
-  const prefixes=['eff_f_i'+k,'eff_g_i'+k,'eff_t_i'+k,'date_i'+k,'seance_i'+k,'g1_'+k,'g4_'+k,'g5_'+k,'g6_'+k,
+  const prefixes=['eff_f_i'+k,'eff_g_i'+k,'g1_'+k,'g4_'+k,'g5_'+k,'g6_'+k,
     'isit_'+k+'_','icons_'+k+'_','icor_'+k+'_','idr_'+k+'_','imeth_'+k,'iana_'+k,'irap_'+k];
   const rerender=()=>openIntegration(niv, numero);
   document.getElementById('zoneAlerte').innerHTML = alerteModifs(bindEditables(el));
@@ -574,7 +572,7 @@ function saveReglages(){
 }
 
 // Numéro de version affiché en haut de l'accueil (le changer à chaque publication, comme CACHE_NAME dans sw.js)
-const APP_VERSION = 'version 11 du 27/09/2026';
+const APP_VERSION = 'version 12 du 27/09/2026';
 document.getElementById('versionApp').textContent = APP_VERSION;
 
 renderNiveaux();
