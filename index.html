@@ -401,11 +401,11 @@ function openFiche(niv, numero){
     ${ed('te_'+k, fmt(l.traceEcrite), 'font-size:14px;line-height:1.7;white-space:pre-line;')}</div>`;
 
   h+=`<div class="card"><h3>Évaluation</h3>
-    ${ed('ev_'+k, esc(l.evaluation), 'font-size:14px;line-height:1.6;white-space:pre-line;')}</div>`;
+    ${ed('ev_'+k, fmt(l.evaluation), 'font-size:14px;line-height:1.6;white-space:pre-line;')}</div>`;
 
   if(l.devoirMaison){
     h+=`<div class="card"><h3>Exercice de maison</h3>
-      ${ed('dm_'+k, esc(l.devoirMaison), 'font-size:14px;line-height:1.6;white-space:pre-line;')}</div>`;
+      ${ed('dm_'+k, fmt(l.devoirMaison), 'font-size:14px;line-height:1.6;white-space:pre-line;')}</div>`;
   }
 
   const el = document.getElementById('viewFiche');
@@ -572,7 +572,7 @@ function saveReglages(){
 }
 
 // Numéro de version affiché en haut de l'accueil (le changer à chaque publication, comme CACHE_NAME dans sw.js)
-const APP_VERSION = 'version 12 du 27/09/2026';
+const APP_VERSION = 'version 13 du 27/09/2026';
 document.getElementById('versionApp').textContent = APP_VERSION;
 
 renderNiveaux();
