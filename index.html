@@ -452,7 +452,7 @@ function indicateursHTML(k, i){
 
 // Déroulement type d'une séance d'intégration (format des fiches d'intégration FLOOOO), 55 min
 const DEROUL_INT=[
-  ['Remobilisation des prérequis','3','Prise de contact, contrôle de présence ; fait rappeler les 6 étapes de la démarche (encadré « Rappel ») ; pose une ou deux questions sur les leçons du thème','Répondent à l\'appel ; récitent les étapes de la démarche ; répondent aux questions','Cahiers de présence et de textes, tableau'],
+  ['Remobilisation des prérequis','3','Prise de contact, contrôle de présence ; pose rapidement une ou deux questions sur les leçons du thème','Répondent à l\'appel et aux questions','Cahiers de présence et de textes, tableau'],
   ['Présentation de la situation d\'intégration','2','Lit posément la situation d\'intégration','Suivent attentivement','Situation d\'intégration au tableau'],
   ['Appropriation de la situation','5','Relit la situation ; fait relever le problème posé (Quel est le problème ? Que vous demande-t-on ?) ; s\'assure que la tâche est comprise ; organise les groupes','Un élève lit, les autres suivent ; relèvent le problème et les consignes','Situation d\'intégration + support'],
   ['Résolution','10','Demande à chacun de traiter seul puis en groupe ; passe de groupe en groupe et réoriente si besoin','Travaillent seuls puis en groupe ; préparent une production','Situation d\'intégration + support'],
@@ -460,14 +460,6 @@ const DEROUL_INT=[
   ['Institutionnalisation','15','Construit avec les élèves la production modèle (voir corrigé type) ; rappelle la démarche de traitement d\'une situation','Participent et notent la production dans leur cahier','Tableau, cahier'],
   ['Réinvestissement','10','Récapitule la démarche ; évaluation : une ou deux questions sur les consignes ; exercice de maison : traiter la situation 2','Répondent ; notent l\'exercice de maison','Tableau, cahier d\'exercices'],
 ];
-
-// Rappel court de la démarche (enseignée en détail à la 1re intégration de 6e)
-const RAPPEL_METHODE = `1- JE LIS la situation deux fois.
-2- J'ANALYSE : qui ? où ? quel est le problème ? quelles sont les consignes ? (je souligne les verbes : définir, citer, expliquer…)
-3- JE CHERCHE dans mes leçons les connaissances utiles à chaque consigne.
-4- JE FAIS MON PLAN au brouillon : introduction, un paragraphe par consigne, conclusion.
-5- JE RÉDIGE : introduction (je reprends la situation et j'annonce mon plan), développement (je réponds aux consignes dans l'ordre), conclusion (« En définitive… »).
-6- JE RELIS avec la grille : pertinence, correction, cohérence, perfectionnement.`;
 
 function openIntegration(niv, numero){
   const i = NIVEAUX[niv].integrations.find(x=>x.numero===numero);
@@ -509,12 +501,12 @@ function openIntegration(niv, numero){
     h+=`<div class="card" style="border:2px solid var(--gold)"><h3>📝 Méthode : traiter une situation d'évaluation</h3>
       <p class="img-legende no-print" style="margin-bottom:6px">À enseigner lors de cette première intégration ; les élèves la recopient dans leur cahier et l'appliquent ensuite à chaque situation.</p>
       ${ed('imeth_'+k, fmt(i.methode), 'font-size:14px;line-height:1.7;white-space:pre-line;')}</div>`;
-  } else {
-    // Toutes les autres intégrations : rappel des 6 étapes
-    const origine = niv==='6e' ? 'démarche apprise à l\'intégration 1' : 'démarche apprise en 6e';
-    const plus = niv==='3e' ? '\nC\'est la même démarche pour les devoirs, les compositions et le BEPC.' : '';
-    h+=`<div class="card" style="border-left:4px solid var(--gold)"><h3>🔁 Rappel : traiter une situation d'évaluation <span style="text-transform:none;font-weight:400;color:var(--ink-soft)">(${origine})</span></h3>
-      ${ed('irap_'+k, esc(RAPPEL_METHODE+plus), 'font-size:13.5px;line-height:1.6;white-space:pre-line;')}</div>`;
+  }
+  // Première intégration de 5e, 4e, 3e : rappel de la démarche
+  if(i.rappel){
+    h+=`<div class="card" style="border:2px solid var(--gold)"><h3>🔁 Rappel : traiter une situation d'évaluation</h3>
+      <p class="img-legende no-print" style="margin-bottom:6px">À rappeler en début de séance (remobilisation) ; les élèves la relisent dans leur cahier.</p>
+      ${ed('irap_'+k, fmt(i.rappel), 'font-size:14px;line-height:1.7;white-space:pre-line;')}</div>`;
   }
 
   i.situations.forEach((s,n)=>{
@@ -533,7 +525,14 @@ function openIntegration(niv, numero){
 
   h+=`<div class="card"><h3>Déroulement de la séance d'intégration — 55 min</h3><div class="table-wrap">
     <table class="deroul-table"><thead><tr><th>Moments didactiques</th><th>Durée</th><th>Activités du professeur</th><th>Activités des élèves</th><th>Matériels didactiques</th></tr></thead><tbody>`;
-  (i.deroulement||DEROUL_INT).forEach((p,pi)=>{
+  let deroul = i.deroulement || DEROUL_INT;
+  if(i.rappel){
+    // Remobilisation allongée pour rappeler la démarche (5 min), institutionnalisation raccourcie (13 min) : total 55 min
+    deroul = deroul.map(p=>p.slice());
+    deroul[0][1]='5'; deroul[0][2]+=' ; fait rappeler les 6 étapes de traitement d\'une situation d\'évaluation (encadré « Rappel »)'; deroul[0][3]+=' ; récitent les étapes de la démarche';
+    deroul[5][1]='13';
+  }
+  deroul.forEach((p,pi)=>{
     h+=`<tr><td style="font-weight:700;color:var(--teal-deep)">${esc(p[0])}</td>
       <td style="color:var(--gold);font-weight:700;white-space:nowrap">${p[1]} min</td>
       <td>${ed(`idr_${k}_${pi}_p`, esc(p[2]), 'white-space:pre-line')}</td>
@@ -575,7 +574,7 @@ function saveReglages(){
 }
 
 // Numéro de version affiché en haut de l'accueil (le changer à chaque publication, comme CACHE_NAME dans sw.js)
-const APP_VERSION = 'version 10 du 27/09/2026';
+const APP_VERSION = 'version 11 du 27/09/2026';
 document.getElementById('versionApp').textContent = APP_VERSION;
 
 renderNiveaux();
