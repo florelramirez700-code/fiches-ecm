@@ -47,7 +47,7 @@
   .lecon-titre{font-size:13.5px;margin-top:2px;}
   .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
   .card h3{font-size:12px;font-weight:700;color:var(--teal-deep);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
-  .sp-box{background:var(--paper);border-left:4px solid var(--gold);padding:10px 12px;border-radius:6px;font-size:14px;line-height:1.6;}
+  .sp-box{background:var(--paper);border-left:4px solid var(--gold);padding:10px 12px;border-radius:6px;font-size:14px;line-height:1.6;white-space:pre-line;}
   .no-content{color:var(--ink-soft);font-style:italic;font-size:13px;}
   .deroul-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
   .deroul-table th{background:var(--teal-deep);color:#fff;padding:6px 8px;text-align:left;font-size:11px;font-weight:600;}
@@ -58,6 +58,9 @@
   [contenteditable]:hover{background:rgba(198,138,46,.05);}
   .fiche-img{max-width:100%;border-radius:8px;margin-top:8px;border:1px solid var(--line);}
   .img-legende{font-size:11px;color:var(--ink-soft);font-style:italic;margin-top:4px;}
+  .doc-titre{font-weight:700;font-size:13px;color:var(--teal-deep);margin:10px 0 4px;}
+  .seance-titre{font-weight:700;font-size:13.5px;color:var(--clay);margin:14px 0 6px;}
+  .seance-titre:first-of-type{margin-top:4px;}
   #viewNiveaux,#viewNiveau,#viewFiche{display:none;}
   #viewNiveaux.active,#viewNiveau.active,#viewFiche.active{display:block;}
   .entete{width:100%;border-collapse:collapse;font-size:13px;}
@@ -360,9 +363,15 @@ function openFiche(niv, numero){
   h+=`<div class="card"><h3>Situation d'apprentissage</h3>
     <div class="sp-box">${ed('sa_'+k, esc(l.situationApprentissage))}</div></div>`;
 
-  if(l.images && l.images.length){
-    h+=`<div class="card"><h3>Documents</h3>`;
-    l.images.forEach(img=>{
+  // Documents-supports (textes et tableaux de la source), puis images et schémas
+  const docs=l.documentsSupports||[];
+  if(docs.length || (l.images && l.images.length)){
+    h+=`<div class="card"><h3>${docs.length?'Documents-supports':'Documents'}</h3>`;
+    docs.forEach((d,di)=>{
+      h+=`<div class="doc-titre">${esc(d.titre)}</div>
+        ${ed(`doc_${k}_${di}`, fmt(d.texte), 'font-size:13.5px;line-height:1.6;white-space:pre-line;')}`;
+    });
+    (l.images||[]).forEach(img=>{
       h+=`<img class="fiche-img" src="${esc(img.fichier)}" alt="${esc(img.legende)}">
         <div class="img-legende">${esc(img.legende)}</div>`;
     });
@@ -379,7 +388,28 @@ function openFiche(niv, numero){
       <p class="img-legende" style="margin-top:8px">Cocher les cases qui te correspondent.</p></div>`;
   }
 
-  if(l.deroulement.length){
+  // Déroulement découpé en séances de 55 min (champ "seance" sur chaque phase)
+  if(l.deroulement.length && l.deroulement[0].seance){
+    h+=`<div class="card"><h3>Déroulement — ${seances} séance${seances>1?'s':''} de 55 min</h3>`;
+    for(let s=1;s<=seances;s++){
+      const ph=l.deroulement.map((p,pi)=>[p,pi]).filter(([p])=>p.seance===s);
+      const tot=ph.reduce((a,[p])=>a+(parseInt(p.duree)||0),0);
+      const titre=(l.seancesTitres&&l.seancesTitres[s-1])||('Séance '+s);
+      h+=`<div class="seance-titre">${esc(titre)} (${tot} min)</div><div class="table-wrap">
+        <table class="deroul-table"><thead><tr><th>Moments didactiques</th><th>Durée</th><th>Activités du professeur</th><th>Activités des élèves</th><th>Matériels didactiques</th></tr></thead><tbody>`;
+      ph.forEach(([p,pi])=>{
+        h+=`<tr>
+          <td style="font-weight:700;color:var(--teal-deep)">${esc(p.phase)}</td>
+          <td style="color:var(--gold);font-weight:700;white-space:nowrap">${esc(p.duree)} min</td>
+          <td>${ed(`ds_${k}_${pi}_p`, esc(p.activiteProf)||'—', 'white-space:pre-line')}</td>
+          <td>${ed(`ds_${k}_${pi}_e`, esc(p.activiteEleve)||'—', 'white-space:pre-line')}</td>
+          <td>${ed(`ds_${k}_${pi}_s`, esc(p.support)||'', 'white-space:pre-line;color:var(--ink-soft);font-style:italic')}</td>
+        </tr>`;
+      });
+      h+='</tbody></table></div>';
+    }
+    h+='</div>';
+  } else if(l.deroulement.length){
     const tot=l.deroulement.reduce((s,p)=>s+(parseInt(p.duree)||0),0);
     h+=`<div class="card"><h3>Déroulement d'une séance — ${tot} min</h3>
       ${seances>2?`<p class="img-legende no-print" style="margin-bottom:6px">Cette leçon compte ${seances} séances : adaptez les activités et les capacités visées à la séance du jour.</p>`:''}
@@ -400,17 +430,22 @@ function openFiche(niv, numero){
   h+=`<div class="card"><h3>Trace écrite</h3>
     ${ed('te_'+k, fmt(l.traceEcrite), 'font-size:14px;line-height:1.7;white-space:pre-line;')}</div>`;
 
+  const corrige=(key,txt)=>txt?`<details class="corrige"><summary>Réponses attendues</summary>
+      ${ed(key, fmt(txt), 'font-size:14px;line-height:1.6;white-space:pre-line;margin-top:6px')}</details>`:'';
+
   h+=`<div class="card"><h3>Évaluation</h3>
-    ${ed('ev_'+k, fmt(l.evaluation), 'font-size:14px;line-height:1.6;white-space:pre-line;')}</div>`;
+    ${ed('ev_'+k, fmt(l.evaluation), 'font-size:14px;line-height:1.6;white-space:pre-line;')}
+    ${corrige('evc_'+k, l.evaluationCorrige)}</div>`;
 
   if(l.devoirMaison){
     h+=`<div class="card"><h3>Exercice de maison</h3>
-      ${ed('dm_'+k, fmt(l.devoirMaison), 'font-size:14px;line-height:1.6;white-space:pre-line;')}</div>`;
+      ${ed('dm_'+k, fmt(l.devoirMaison), 'font-size:14px;line-height:1.6;white-space:pre-line;')}
+      ${corrige('dmc_'+k, l.devoirCorrige)}</div>`;
   }
 
   const el = document.getElementById('viewFiche');
   el.innerHTML = h;
-  const prefixes=['fn_','eff_f_','eff_g_','sup_','pre_','met_','tec_','comp_','sa_','te_','ev_','dm_'].map(p=>p+k).concat(['d_'+k+'_']);
+  const prefixes=['fn_','eff_f_','eff_g_','sup_','pre_','met_','tec_','comp_','sa_','te_','ev_','dm_','evc_','dmc_'].map(p=>p+k).concat(['d_'+k+'_','ds_'+k+'_','doc_'+k+'_']);
   // Effectif, date et n° de fiche sont des saisies normales : pas d'alerte pour eux
   const n = bindEditables(el);
   const rerender=()=>openFiche(niv, numero);
@@ -422,19 +457,32 @@ function openFiche(niv, numero){
 
 // Grille de notation au format FLOOOO : une ligne par consigne (ou par situation quand il y en a
 // plusieurs), 4 critères à points égaux → critères minimaux = 3/4 de la note, perfectionnement = 1/4.
+// Format des épreuves officielles (BEPC, compositions régionales) : une situation d'évaluation est notée sur 8 points.
+// Une consigne : 2 pts par critère ; deux consignes : 1 pt par critère pour chaque consigne (4 pts par consigne).
+const fmtPts = x => (Math.round(x*100)/100).toString().replace('.',',')+(x>1?' pts':' pt');
+function grilleSituationHTML(s){
+  const rows = s.consignes.length>1 ? s.consignes.map((c,j)=>'Consigne '+(j+1)) : ['Consigne'];
+  const pt = rows.length>1 ? 1 : 2;
+  let h=`<div class="table-wrap" style="margin-top:10px"><table class="grille"><thead><tr><th></th><th>Pertinence</th><th>Correction</th><th>Cohérence</th><th>Perfectionnement</th><th>Total</th></tr></thead><tbody>`;
+  rows.forEach(r=>{ h+=`<tr><td><b>${r}</b></td>${[1,2,3,4].map(()=>`<td class="pts">${fmtPts(pt)}</td>`).join('')}<td class="pts">${fmtPts(pt*4)}</td></tr>`; });
+  if(rows.length>1) h+=`<tr><td colspan="5" style="text-align:right;font-weight:700">Total</td><td class="pts">8 pts</td></tr>`;
+  return h+`</tbody></table></div>`;
+}
+// Barème des lignes de la grille de correction détaillée (total 8 pts, comme les corrigés types des compositions régionales)
+function baremeIndices(rows){
+  const pts=rows.map(()=>0), de=c=>rows.map((r,ri)=>ri).filter(ri=>rows[ri][0]===c);
+  const P=de('Pertinence'); if(P.length===3){pts[P[0]]=0.5;pts[P[1]]=0.5;pts[P[2]]=1;} else P.forEach(ri=>pts[ri]=2/P.length);
+  ['Correction','Cohérence'].forEach(c=>{const X=de(c); X.forEach(ri=>pts[ri]=2/X.length);});
+  const F=de('Perfectionnement'); if(F.length===2){pts[F[0]]=1.5;pts[F[1]]=0.5;} else F.forEach(ri=>pts[ri]=2/F.length);
+  return pts;
+}
 function grilleMatriceHTML(k, i){
   // La situation de remédiation n'est pas notée
   const sits=i.situations.filter(s=>!/remédiation/i.test(s.titre));
-  const rows = sits.length>1
-    ? sits.map((s,n)=>'Situation '+(n+1))
-    : sits[0].consignes.map((c,n)=>'Consigne '+(n+1));
-  const pt = rows.length===1 ? 2 : 1;
-  const total = rows.length*pt*4;
-  let h=`<div class="table-wrap"><table class="grille"><thead><tr><th></th><th>Pertinence</th><th>Correction</th><th>Cohérence</th><th>Perfectionnement</th><th>Total</th></tr></thead><tbody>`;
-  rows.forEach(r=>{ h+=`<tr><td><b>${r}</b></td>${[1,2,3,4].map(()=>`<td class="pts">${pt} pt${pt>1?'s':''}</td>`).join('')}<td class="pts">${pt*4} pts</td></tr>`; });
-  h+=`<tr><td colspan="5" style="text-align:right;font-weight:700">Total</td><td class="pts">${total} pts</td></tr></tbody></table></div>`;
-  if(total!==20) h+=`<p class="img-legende" style="margin-top:4px">Note sur ${total} : pour l'avoir sur 20, multiplier par 20 puis diviser par ${total}.</p>`;
-  h+=`<p style="font-size:12.5px;margin-top:6px">Critères minimaux (Pertinence, Correction, Cohérence) = 3/4 des points ; critère de perfectionnement = 1/4.</p>`;
+  let h=`<div class="table-wrap"><table class="grille"><thead><tr><th>Situation notée</th><th>Consignes</th><th>Note</th></tr></thead><tbody>`;
+  sits.forEach(s=>{ h+=`<tr><td><b>${esc(s.titre.split(' — ')[0])}</b></td><td>${s.consignes.length>1?'2 consignes (4 pts chacune)':'1 consigne'}</td><td class="pts">8 pts</td></tr>`; });
+  h+=`</tbody></table></div>
+    <p style="font-size:12.5px;margin-top:6px">Comme la partie A (situation d'évaluation) des épreuves du BEPC et des compositions régionales, chaque situation est notée sur 8 points : critères minimaux (pertinence, correction, cohérence) = 6 pts, critère de perfectionnement = 2 pts. La grille de chaque situation est affichée sous ses documents.</p>`;
   return h;
 }
 
@@ -510,11 +558,20 @@ function openIntegration(niv, numero){
   i.situations.forEach((s,n)=>{
     h+=`<div class="card"><h3>${esc(s.titre)}</h3>
       <div class="sp-box">${ed(`isit_${k}_${n}`, esc(s.texte))}</div>
-      <div style="margin-top:10px;font-size:14px;line-height:1.6"><b>Consigne${s.consignes.length>1?'s':''} :</b>
-        ${ed(`icons_${k}_${n}`, s.consignes.map((c,j)=>(s.consignes.length>1?(j+1)+'. ':'')+esc(c)).join('\n'), 'white-space:pre-line')}</div>
+      <div style="margin-top:10px;font-size:14px;line-height:1.6">
+        ${ed(`icons_${k}_${n}`, (s.amorce?esc(s.amorce)+'\n':'')+s.consignes.map((c,j)=>'<b>Consigne'+(s.consignes.length>1?' '+(j+1):'')+' :</b> '+esc(c)).join('\n'), 'white-space:pre-line')}</div>
+      ${(s.documents||[]).map((d,di)=>`<div class="doc-titre">${esc(d.titre)}</div>
+        ${d.image?`<img class="fiche-img" src="${esc(d.image)}" alt="${esc(d.titre)}" style="max-height:340px;display:block">${d.credit?`<div class="img-legende">${esc(d.credit)}</div>`:''}`:''}
+        ${d.texte?ed(`idoc_${k}_${n}_${di}`, fmt(d.texte), 'font-size:13.5px;line-height:1.6;white-space:pre-line;'):''}`).join('')}
+      ${/remédiation/i.test(s.titre) ? '' : grilleSituationHTML(s)}
       ${n===0 && i.analyse ? `<div style="margin-top:10px">${ed('iana_'+k, fmt(i.analyse), 'font-size:13.5px;line-height:1.6;white-space:pre-line;font-weight:normal')}</div>` : ''}
       <details class="corrige" ${n===0?'open':''}><summary>Corrigé type</summary>
         ${ed(`icor_${k}_${n}`, fmt(s.corrige), 'font-size:14px;line-height:1.7;white-space:pre-line;margin-top:6px')}</details>
+      ${s.indices?`<details class="corrige"><summary>Grille de correction de cette situation (critères, indicateurs, indices)</summary>
+        <div class="table-wrap"><table class="grille"><thead><tr><th>Critères</th><th>Indicateurs</th><th>Indices</th><th>Barème</th></tr></thead><tbody>
+        ${(b=>s.indices.map((r,ri)=>`<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${ed(`iind_${k}_${n}_${ri}`, esc(r[2]))}</td><td class="pts">${fmtPts(b[ri])}</td></tr>`).join(''))(baremeIndices(s.indices))}
+        <tr><td colspan="3" style="text-align:right;font-weight:700">Total${s.consignes.length>1?' (la moitié des points pour chaque consigne)':''}</td><td class="pts">8 pts</td></tr>
+        </tbody></table></div></details>`:''}
     </div>`;
   });
 
@@ -530,6 +587,19 @@ function openIntegration(niv, numero){
     deroul[0][1]='5'; deroul[0][2]+=' ; fait rappeler les 6 étapes de traitement d\'une situation d\'évaluation (encadré « Rappel »)'; deroul[0][3]+=' ; récitent les étapes de la démarche';
     deroul[5][1]='13';
   }
+  // Réinvestissement : une ou deux questions courtes sur les consignes, comme dans les fiches d'intégration de la collègue
+  if(i.questions && i.questions.length){
+    deroul = deroul.map(p=>p.slice());
+    const r = deroul.find(p=>/^Réinvestissement/.test(p[0]));
+    if(r){
+      const segs = r[2].split(' ; ').filter(x=>!/^évaluation/i.test(x));
+      const iEx = segs.findIndex(x=>/^exercice de maison/i.test(x));
+      const bloc = 'Évaluation (questions sur les consignes de la situation) :\n'+i.questions.map((x,j)=>'Q'+(j+1)+' : '+x.q).join('\n');
+      if(iEx<0) segs.push(bloc); else segs.splice(iEx,0,bloc);
+      r[2] = segs.map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join('\n');
+      r[3] = r[3]+'\nRéponses attendues :\n'+i.questions.map((x,j)=>'Q'+(j+1)+' : '+x.r).join('\n');
+    }
+  }
   deroul.forEach((p,pi)=>{
     h+=`<tr><td style="font-weight:700;color:var(--teal-deep)">${esc(p[0])}</td>
       <td style="color:var(--gold);font-weight:700;white-space:nowrap">${p[1]} min</td>
@@ -542,7 +612,7 @@ function openIntegration(niv, numero){
   const el = document.getElementById('viewFiche');
   el.innerHTML = h;
   const prefixes=['eff_f_i'+k,'eff_g_i'+k,'g1_'+k,'g4_'+k,'g5_'+k,'g6_'+k,
-    'isit_'+k+'_','icons_'+k+'_','icor_'+k+'_','idr_'+k+'_','imeth_'+k,'iana_'+k,'irap_'+k];
+    'isit_'+k+'_','idoc_'+k+'_','icons_'+k+'_','icor_'+k+'_','iind_'+k+'_','idr_'+k+'_','imeth_'+k,'iana_'+k,'irap_'+k];
   const rerender=()=>openIntegration(niv, numero);
   document.getElementById('zoneAlerte').innerHTML = alerteModifs(bindEditables(el));
   const bt=document.getElementById('btnToutOrig');
@@ -572,7 +642,7 @@ function saveReglages(){
 }
 
 // Numéro de version affiché en haut de l'accueil (le changer à chaque publication, comme CACHE_NAME dans sw.js)
-const APP_VERSION = 'version 16 du 27/09/2026';
+const APP_VERSION = 'version 17 du 23/10/2026';
 document.getElementById('versionApp').textContent = APP_VERSION;
 
 renderNiveaux();
