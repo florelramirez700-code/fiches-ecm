@@ -1,5 +1,5 @@
 // Changer ce numéro à chaque mise à jour importante force le rechargement de tous les fichiers.
-const CACHE_NAME = 'ecm-v19';
+const CACHE_NAME = 'ecm-v20';
 const ASSETS = [
   './',
   './index.html',
@@ -86,10 +86,12 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
+// On n'efface que les anciennes copies de l'ECM : l'appli HG (et d'autres) sont à la même adresse
+// (florelramirez700-code.github.io) et partagent les mêmes caches ; tout effacer supprimait leur copie hors ligne.
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      Promise.all(keys.filter(k => k.startsWith('ecm-') && k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
