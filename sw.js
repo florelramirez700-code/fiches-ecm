@@ -1,5 +1,5 @@
 // Changer ce numéro à chaque mise à jour importante force le rechargement de tous les fichiers.
-const CACHE_NAME = 'ecm-v21';
+const CACHE_NAME = 'ecm-v22';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,10 @@ const ASSETS = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  './epreuves-5e.js',
+  './epreuves-6e.js',
+  './epreuves.js',
+  './lib/docx.umd.js',
   './lib/html2canvas.min.js',
   './lib/jspdf.umd.min.js',
   './images/3e_lecon1.png',

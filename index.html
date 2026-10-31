@@ -61,8 +61,32 @@
   .doc-titre{font-weight:700;font-size:13px;color:var(--teal-deep);margin:10px 0 4px;}
   .seance-titre{font-weight:700;font-size:13.5px;color:var(--clay);margin:14px 0 6px;}
   .seance-titre:first-of-type{margin-top:4px;}
-  #viewNiveaux,#viewNiveau,#viewFiche{display:none;}
-  #viewNiveaux.active,#viewNiveau.active,#viewFiche.active{display:block;}
+  #viewNiveaux,#viewNiveau,#viewFiche,#viewEpreuves{display:none;}
+  #viewNiveaux.active,#viewNiveau.active,#viewFiche.active,#viewEpreuves.active{display:block;}
+  /* Générateur d'épreuves (epreuves.js) */
+  .niveau-card.epreuves{border-color:var(--gold);}
+  .niveau-card.epreuves .num{background:var(--gold);font-size:20px;}
+  .ep-niveaux{display:flex;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:12px;}
+  .ep-niveaux button{flex:1;padding:10px 6px;border:none;border-radius:9px;background:transparent;color:var(--ink-soft);font-weight:600;font-size:14px;cursor:pointer;}
+  .ep-niveaux button.active{background:var(--teal-deep);color:#fff;}
+  .ep-note{font-size:12px;color:var(--ink-soft);margin:0 0 8px;}
+  .ep-actions{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px;}
+  .ep-lecon{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;padding:6px 2px;border-bottom:1px solid #EFEBE0;cursor:pointer;}
+  .ep-lecon input{margin-top:3px;flex-shrink:0;}
+  .ep-lecon small{color:var(--ink-soft);}
+  .ep-label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin:6px 0 4px;display:block;}
+  .ep-select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;margin-bottom:6px;}
+  .ep-feuille{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 16px;font-family:'Times New Roman',serif;font-size:14.5px;margin-top:6px;}
+  .ep-titre{text-align:center;font-weight:700;margin:0 0 4px;}
+  .ep-centre{text-align:center;margin:0 0 12px;font-size:13px;}
+  .ep-h{font-weight:700;text-decoration:underline;margin:16px 0 6px;}
+  .ep-p{margin:0 0 6px;white-space:pre-line;}
+  .ep-p.b{font-weight:700;} .ep-p.i{font-style:italic;} .ep-p.u{text-decoration:underline;}
+  .ep-cadre{border:1px solid var(--ink);padding:8px 10px;margin:6px 0 10px;}
+  .ep-img{display:block;max-width:100%;max-height:520px;height:auto;margin:6px auto;background:#fff;}
+  .ep-tablewrap{margin:4px 0 10px;}
+  .ep-cell{white-space:pre-line;}
+  @media (max-width:480px){ .ep-feuille{padding:10px 8px;font-size:13.5px;} }
   .entete{width:100%;border-collapse:collapse;font-size:13px;}
   .entete td{padding:5px 8px;border:1px solid var(--line);vertical-align:top;}
   .entete td.k{font-weight:700;background:var(--paper);white-space:nowrap;width:1%;}
@@ -146,11 +170,17 @@
     <button class="back-btn" onclick="goNiveau()">←</button>
     <div><h1 id="hdrFicheTitre" style="font-size:15px;"></h1><p id="hdrFicheMeta"></p></div>
   </div>
+  <div id="hdrEpreuves" class="hdr-row" style="display:none">
+    <div class="hdr-left"><button class="back-btn" onclick="fermerEpreuves()">←</button>
+    <div><h1>📝 Épreuves</h1><p>Devoirs surveillés et compositions, sujet et corrigé type</p></div></div>
+    <button class="reglages-btn" onclick="openReglages()">⚙ Réglages</button>
+  </div>
 </header>
 <div class="container">
   <div id="viewNiveaux" class="active"></div>
   <div id="viewNiveau"></div>
   <div id="viewFiche"></div>
+  <div id="viewEpreuves"></div>
 </div>
 
 <div class="modal-overlay" id="modalReglages">
@@ -170,6 +200,8 @@
 </div>
 
 <script src="data.js"></script>
+<script src="epreuves-6e.js"></script>
+<script src="epreuves-5e.js"></script>
 <script>
 const NIVEAU_LABELS = {'6e':'6ème','5e':'5ème','4e':'4ème','3e':'3ème'};
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -263,6 +295,10 @@ function renderNiveaux(){
       <div class="info"><h3>Classe de ${NIVEAU_LABELS[niv]}</h3><span>${d.lecons.length} leçons · ${d.integrations.length} intégrations</span></div>
       <div>›</div></div>`;
   });
+  h+=`<div class="niveau-card epreuves" onclick="openEpreuves()">
+      <div class="num">📝</div>
+      <div class="info"><h3>Épreuves</h3><span>Générer un devoir surveillé ou une composition, avec son corrigé type (Word)</span></div>
+      <div>›</div></div>`;
   document.getElementById('viewNiveaux').innerHTML = h;
 }
 
@@ -750,7 +786,7 @@ async function telechargerPDF(){
 }
 
 // Numéro de version affiché en haut de l'accueil (le changer à chaque publication, comme CACHE_NAME dans sw.js)
-const APP_VERSION = 'version 20 du 31/10/2026';
+const APP_VERSION = 'version 21 du 31/10/2026';
 document.getElementById('versionApp').textContent = APP_VERSION;
 
 renderNiveaux();
@@ -773,5 +809,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<script src="epreuves.js"></script>
 </body>
 </html>
