@@ -1,5 +1,5 @@
 // Changer ce numéro à chaque mise à jour importante force le rechargement de tous les fichiers.
-const CACHE_NAME = 'ecm-v20';
+const CACHE_NAME = 'ecm-v21';
 const ASSETS = [
   './',
   './index.html',
