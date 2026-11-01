@@ -19,7 +19,11 @@ const TRIMESTRES = {
   // 6e : ECM_6e-_VFR_2024.pdf p. 4-5 (L8 en semaine 11, L14 en semaines 20-21)
   '6e': { '1er': ['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8'], '2e': ['l9', 'l10', 'l11', 'l12', 'l13', 'l14'], '3e': 'tout' },
   // 5e : ECM__5e-_VFR_2024.pdf p. 4-5 (décembre : L7 et intégration ; janvier : L8 ; mars : L12-L13 ; avril : L14)
-  '5e': { '1er': ['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7'], '2e': ['l8', 'l9', 'l10', 'l11', 'l12', 'l13'], '3e': 'tout' }
+  '5e': { '1er': ['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7'], '2e': ['l8', 'l9', 'l10', 'l11', 'l12', 'l13'], '3e': 'tout' },
+  // 4e : ECM_4e-_VFR2_2024.docx, progression annuelle (décembre : L9 et intégration ; janvier : L10-L12 ; mars : L14 et L15 ; avril : intégration)
+  '4e': { '1er': ['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8', 'l9'], '2e': ['l10', 'l11', 'l12', 'l13', 'l14', 'l15'], '3e': 'tout' },
+  // 3e : VR ECM 3e -2024.pdf, progression annuelle (décembre : L5 et intégration ; L6 de la semaine 12 à janvier ; mars : L9-L10 ; avril-mai : L11-L12)
+  '3e': { '1er': ['l1', 'l2', 'l3', 'l4', 'l5'], '2e': ['l6', 'l7', 'l8', 'l9', 'l10'], '3e': 'tout' }
 };
 const LS_EPREUVES = 'ecm_epreuves'; // leçons cochées et options, par niveau (commodité sur cet appareil seulement)
 const ep = { level: '6e', choix: {}, epreuve: null };
@@ -36,6 +40,8 @@ function choixNiveau(lv){
 const melange = a => { const b = a.slice(); for(let i = b.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 const unAuHasard = a => a[Math.floor(Math.random() * a.length)];
 // 4 éléments au hasard, en gardant leur ordre d'origine
+// mélange « croisé » : aucun élément ne reste à sa place (relier, ranger, mots à placer), pour que les réponses ne se lisent pas en ligne droite
+const croise = a => { if(a.length < 2) return a.slice(); let k; do k = melange(a.map((x, i) => i)); while(k.some((j, i) => j === i)); return k.map(j => a[j]); };
 const quatreDansLOrdre = (a, n = 4) => melange(a.map((x, i) => i)).slice(0, n).sort((x, y) => x - y).map(i => a[i]);
 const pts = n => String(n).replace('.', ',') + (n >= 2 ? ' pts' : ' pt');
 const LETTRES = 'abcdefgh';
@@ -53,6 +59,8 @@ function leconsRecentes(lv, lecons, ch){
 // En 4e et en 3e, une situation peut avoir deux consignes (consignes + prods, une production par consigne) ; en 6e et 5e, une seule.
 const consignesDe = A => A.consignes || [A.consigne];
 const productionsDe = A => A.prods || [A];
+// Documents d'une situation : docs [Document 1, Document 2…] (souvent un par consigne), ou un seul doc
+const documentsDe = A => A.docs || (A.doc ? [A.doc] : []);
 function tirerPartieA(e, B){
   const pool = leconsDe(e).flatMap(id => (B[id].sit || []).map(s => ({ id, s })));
   return pool.length ? [Object.assign(unAuHasard(pool), { pts: 8 })] : [];
@@ -61,14 +69,19 @@ function tirerPartieA(e, B){
 function exercicesPossibles(lecons, B){
   const pool = k => lecons.flatMap(id => (B[id][k] || []).map(x => ({ id, x })));
   const ex = {};
-  ['vf', 'choix', 'defs'].forEach(k => { const p = pool(k); if(p.length >= 4) ex[k] = () => ({ type: k, items: melange(p).slice(0, 4).map(o => o.x) }); });
+  // choix : les propositions entre parenthèses sont mélangées à chaque tirage (dans la réserve, la bonne réponse est écrite en premier)
+  const propositions = it => [it[0].replace(/\(([^()]*\/[^()]*)\)/, (m, o) => '(' + melange(o.split(' / ')).join(' / ') + ')')].concat(it.slice(1));
+  // vrai/faux : toujours des « Vrai » et des « Faux » mélangés (1 à 3 « Faux » sur 4), jamais quatre réponses identiques quand la réserve le permet
+  const vraiFaux = p => { const V = melange(p.filter(o => o.x[1])), F = melange(p.filter(o => !o.x[1])), n = melange([1, 2, 3].filter(k => F.length >= k && V.length >= 4 - k))[0];
+    return n ? melange(F.slice(0, n).concat(V.slice(0, 4 - n))) : melange(p).slice(0, 4); };
+  ['vf', 'choix', 'defs'].forEach(k => { const p = pool(k); if(p.length >= 4) ex[k] = () => ({ type: k, items: (k === 'vf' ? vraiFaux(p) : melange(p).slice(0, 4)).map(o => k === 'choix' ? propositions(o.x) : o.x) }); });
   // l'ordre d'affichage (séries, mots) est tiré une fois pour toutes : l'aperçu et le fichier Word restent identiques
   const intr = pool('intrus'); if(intr.length >= 4) ex.intrus = () => ({ type: 'intrus', items: melange(intr).slice(0, 4).map(o => [melange(o.x[0]), o.x[1], o.x[2]]) });
-  const comp = pool('comp'); if(comp.length) ex.comp = () => { const x = unAuHasard(comp).x; return { type: 'comp', x, motsAffiches: melange(x.mots) }; };
+  const comp = pool('comp'); if(comp.length) ex.comp = () => { const x = unAuHasard(comp).x; return { type: 'comp', x, motsAffiches: croise(x.mots) }; };
   const rel = pool('relier').filter(o => o.x.A.length >= 4);
-  if(rel.length) ex.relier = () => { const r = unAuHasard(rel).x, idx = melange(r.A.map((a, i) => i)).slice(0, 4); return { type: 'relier', consigne: r.consigne, A: idx.map(i => r.A[i]), B: idx.map(i => r.B[i]), ordreB: melange([0, 1, 2, 3]) }; };
+  if(rel.length) ex.relier = () => { const r = unAuHasard(rel).x, idx = melange(r.A.map((a, i) => i)).slice(0, 4); return { type: 'relier', consigne: r.consigne, A: idx.map(i => r.A[i]), B: idx.map(i => r.B[i]), ordreB: croise([0, 1, 2, 3]) }; };
   const ord = pool('ordre').filter(o => o.x.elements.length >= 4);
-  if(ord.length) ex.ordre = () => { const o = unAuHasard(ord).x, bons = quatreDansLOrdre(o.elements); return { type: 'ordre', consigne: o.consigne, bons, affiches: melange(bons) }; };
+  if(ord.length) ex.ordre = () => { const o = unAuHasard(ord).x, bons = quatreDansLOrdre(o.elements); return { type: 'ordre', consigne: o.consigne, bons, affiches: croise(bons) }; };
   const cla = pool('classer').filter(o => o.x.elts.length >= 4);
   if(cla.length) ex.classer = () => {
     const c = unAuHasard(cla).x; let elts;
@@ -151,7 +164,8 @@ function exerciceB(x, n, corrige){
   } else if(x.type === 'relier'){
     b.push({ k: 'p', txt: n + '. ' + x.consigne + ' (2 pts)', b: true });
     const lettreDe = i => LETTRES[x.ordreB.indexOf(i)];
-    if(corrige) b.push({ k: 'p', txt: x.A.map((a, i) => (i + 1) + ' → ' + lettreDe(i)).join(' ; ') + '  (' + x.A.map((a, i) => a + ' : ' + x.B[i]).join(' ; ') + ')' });
+    // corrigé en tableau, comme le sujet : chaque élément de la liste A en face de sa bonne réponse
+    if(corrige) b.push({ k: 'table', entetes: ['Liste A', 'Réponse', 'Liste B'], lignes: x.A.map((a, i) => [(i + 1) + '. ' + a, (i + 1) + ' → ' + lettreDe(i), lettreDe(i) + ') ' + x.B[i]]) });
     else b.push({ k: 'table', entetes: ['Liste A', 'Liste B'], lignes: x.A.map((a, i) => [(i + 1) + '. ' + a, LETTRES[i] + ') ' + x.B[x.ordreB[i]]]) });
   } else if(x.type === 'ordre'){
     b.push({ k: 'p', txt: n + '. ' + x.consigne + ' Écris les lettres dans le bon ordre. (2 pts)', b: true });
@@ -177,11 +191,11 @@ function blocsSujet(e){
   b.push({ k: 'h', txt: 'PARTIE A : SITUATION D\'ÉVALUATION (8 pts)' });
   e.A.forEach(({ s: A }) => {
     b.push({ k: 'p', txt: A.texte });
-    const c = consignesDe(A);
+    const c = consignesDe(A), D = documentsDe(A);
     // une consigne qui commence par « À partir de… » ou « En t'appuyant… » n'a pas besoin de la phrase d'amorce
-    if(c.length === 2 || !/^(À partir|En t'appuyant)/.test(c[0])) b.push({ k: 'p', txt: A.amorce || (A.doc ? 'En t\'appuyant sur tes connaissances et sur le document ci-après :' : 'En t\'appuyant sur tes connaissances :') });
+    if(c.length === 2 || !/^(À partir|En t'appuyant)/.test(c[0])) b.push({ k: 'p', txt: A.amorce || (D.length > 1 ? 'En t\'appuyant sur tes connaissances et sur les documents ci-après :' : D.length ? 'En t\'appuyant sur tes connaissances et sur le document ci-après :' : 'En t\'appuyant sur tes connaissances :') });
     c.forEach((x, j) => b.push({ k: 'p', txt: (c.length === 2 ? 'Consigne ' + (j + 1) + ' : ' : 'Consigne : ') + x, b: true }));
-    if(A.doc) b.push({ k: 'cadre', titre: A.doc.titre, texte: A.doc.texte, liste: A.doc.liste, image: A.doc.image, credit: A.doc.credit, tableau: A.doc.tableau });
+    D.forEach(d => b.push({ k: 'cadre', titre: d.titre, texte: d.texte, liste: d.liste, image: d.image, credit: d.credit, tableau: d.tableau }));
     b.push({ k: 'p', txt: 'Grille de notation', b: true });
     b.push(grilleNotation(A));
   });

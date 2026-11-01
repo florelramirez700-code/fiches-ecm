@@ -202,6 +202,8 @@
 <script src="data.js"></script>
 <script src="epreuves-6e.js"></script>
 <script src="epreuves-5e.js"></script>
+<script src="epreuves-4e.js"></script>
+<script src="epreuves-3e.js"></script>
 <script>
 const NIVEAU_LABELS = {'6e':'6ème','5e':'5ème','4e':'4ème','3e':'3ème'};
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -786,7 +788,7 @@ async function telechargerPDF(){
 }
 
 // Numéro de version affiché en haut de l'accueil (le changer à chaque publication, comme CACHE_NAME dans sw.js)
-const APP_VERSION = 'version 21 du 31/10/2026';
+const APP_VERSION = 'version 22 du 01/11/2026';
 document.getElementById('versionApp').textContent = APP_VERSION;
 
 renderNiveaux();

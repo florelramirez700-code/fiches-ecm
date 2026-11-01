@@ -1,5 +1,5 @@
 // Changer ce numéro à chaque mise à jour importante force le rechargement de tous les fichiers.
-const CACHE_NAME = 'ecm-v22';
+const CACHE_NAME = 'ecm-v23';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,8 @@ const ASSETS = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  './epreuves-3e.js',
+  './epreuves-4e.js',
   './epreuves-5e.js',
   './epreuves-6e.js',
   './epreuves.js',
@@ -73,6 +75,12 @@ const ASSETS = [
   './images/6e_lecon7.png',
   './images/6e_lecon8.png',
   './images/6e_lecon9.png',
+  './images/ep_4e_enfant_filature.jpg',
+  './images/ep_4e_marche_selma_1965.jpg',
+  './images/ep_4e_navire_negrier_1789.jpg',
+  './images/ep_4e_rosa_parks_1956.jpg',
+  './images/ep_4e_salle_attente_segregation.jpg',
+  './images/ep_6e_plan_maison.png',
   './images/int_3e_bureau_de_vote.jpg',
   './images/int_3e_quartier_inonde_lome.jpg',
   './images/int_3e_rue_inondee_lome.jpg',
